@@ -1,0 +1,12 @@
+{
+  "name": "graphql-admin",
+  "reason": { "react-jsx": 2 },
+  "sources": {
+    "dir": "src",
+    "subdirs": true
+  },
+  "package-specs": [{ "module": "commonjs" }],
+  "namespace": true,
+  "bs-dependencies": ["reason-react", "bs-fetch"],
+  "refmt": 3
+}
