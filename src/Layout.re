@@ -54,7 +54,7 @@ let make = children => {
                         <i className="fa fa-align-justify" />
                         {ReasonReact.string(" Table")}
                       </div>
-                      children
+                      <div> ...children </div>
                     </div>
                   </div>
                 </div>

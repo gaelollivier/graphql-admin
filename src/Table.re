@@ -1,31 +1,12 @@
 let component = ReasonReact.statelessComponent("Table");
 
-let make = _children => {
+let make = children => {
   ...component,
   render: _self =>
     <div className="card-body">
       <table
         className="table table-responsive-sm table-bordered table-striped table-sm">
-        <thead>
-          <tr>
-            <th> {ReasonReact.string("Username")} </th>
-            <th> {ReasonReact.string("Date registered")} </th>
-            <th> {ReasonReact.string("Role")} </th>
-            <th> {ReasonReact.string("Status")} </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td> {ReasonReact.string("Vishnu Serghei")} </td>
-            <td> {ReasonReact.string("2012/01/01")} </td>
-            <td> {ReasonReact.string("Member")} </td>
-            <td>
-              <span className="badge badge-success">
-                {ReasonReact.string("Active")}
-              </span>
-            </td>
-          </tr>
-        </tbody>
+        ...children
       </table>
       <nav>
         <ul className="pagination">
@@ -48,4 +29,49 @@ let make = _children => {
         </ul>
       </nav>
     </div>,
+};
+
+module Head = {
+  let component = ReasonReact.statelessComponent("Table.Head");
+
+  let make = children => {
+    ...component,
+    render: _self => <thead> <tr> ...children </tr> </thead>,
+  };
+};
+
+module HeadColumn = {
+  let component = ReasonReact.statelessComponent("Table.HeadColumn");
+
+  let make = children => {
+    ...component,
+    render: _self => <th> ...children </th>,
+  };
+};
+
+module Rows = {
+  let component = ReasonReact.statelessComponent("Table.Rows");
+
+  let make = children => {
+    ...component,
+    render: _self => <tbody> ...children </tbody>,
+  };
+};
+
+module Row = {
+  let component = ReasonReact.statelessComponent("Table.Row");
+
+  let make = children => {
+    ...component,
+    render: _self => <tr> ...children </tr>,
+  };
+};
+
+module Cell = {
+  let component = ReasonReact.statelessComponent("Table.Cell");
+
+  let make = children => {
+    ...component,
+    render: _self => <td> ...children </td>,
+  };
 };

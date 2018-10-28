@@ -1,6 +1,6 @@
 open Belt;
 
-let query = "query IntrospectionQuery {
+let introspectionQuery = "query IntrospectionQuery {
     __schema {
       queryType { name }
       mutationType { name }
@@ -68,20 +68,20 @@ let query = "query IntrospectionQuery {
     }
 }";
 
-type graphQLField = {
+type field = {
   name: string,
-  type_: graphQLType,
+  type_,
 }
-and graphQLType = {
+and type_ = {
   name: option(string),
   kind: string,
-  fields: option(list(graphQLField)),
-  ofType: option(graphQLType),
+  fields: option(list(field)),
+  ofType: option(type_),
 };
 
 type graphQLSchema = {
-  queryFields: list(graphQLField),
-  types: Map.String.t(graphQLType),
+  queryFields: list(field),
+  types: Map.String.t(type_),
 };
 
 let rec decodeField = json =>
