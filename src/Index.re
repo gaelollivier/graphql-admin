@@ -1,19 +1,12 @@
-let authToken = "Bearer ";
+open Belt;
 
 let _ = {
   let payload = Js.Dict.empty();
-  Js.Dict.set(
-    payload,
-    "query",
-    Js.Json.string("{
-    contacts {
-      totalCount
-    }
-  }"),
-  );
+  Js.Dict.set(payload, "query", Js.Json.string(Introspection.query));
+
   Js.Promise.(
     Fetch.fetchWithInit(
-      "http://localhost:5000/graphql",
+      "https://api.github.com/graphql",
       Fetch.RequestInit.make(
         ~method_=Post,
         ~body=
@@ -21,14 +14,15 @@ let _ = {
         ~headers=
           Fetch.HeadersInit.make({
             "Content-Type": "application/json",
-            "Authorization": authToken,
+            "Authorization": Auth.token,
           }),
         (),
       ),
     )
     |> then_(Fetch.Response.json)
     |> then_(res => {
-         Js.log(res);
+         let schema = Introspection.decodeIntrospectionQuery(res);
+         schema.queryFields->List.forEach(field => Js.log(field.name));
          Js.Promise.resolve();
        })
   );

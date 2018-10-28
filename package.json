@@ -17,6 +17,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@glennsl/bs-json": "^3.0.0",
     "bs-fetch": "^0.3.0",
     "font-awesome": "^4.7.0",
     "react": "^16.2.0",

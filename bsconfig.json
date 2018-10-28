@@ -7,6 +7,6 @@
   },
   "package-specs": [{ "module": "commonjs" }],
   "namespace": true,
-  "bs-dependencies": ["reason-react", "bs-fetch"],
+  "bs-dependencies": ["reason-react", "bs-fetch", "@glennsl/bs-json"],
   "refmt": 3
 }
