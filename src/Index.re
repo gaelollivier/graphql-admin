@@ -27,3 +27,5 @@ let _ = {
        })
   );
 };
+
+ReactDOMRe.renderToElementWithId(<App />, "root");
