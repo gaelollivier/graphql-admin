@@ -6,41 +6,53 @@ let component = ReasonReact.statelessComponent("App");
 let make = _children => {
   ...component,
   render: _self =>
-    <>
-      <Header> {ReasonReact.string("GraphQL Admin")} </Header>
-      <Body>
-        <FetchQuery query=Schema.introspectionQuery>
-          ...{
-               introspectionRes => {
-                 let schema =
-                   Schema.decodeIntrospectionQuery(introspectionRes);
-                 <>
-                   <Sidebar>
-                     {
-                       schema.queryFields
-                       ->List.map(({name}) =>
-                           <SidebarItem key=name>
-                             {ReasonReact.string(name)}
-                           </SidebarItem>
-                         )
-                       ->List.toArray
-                       ->ReasonReact.array
-                     }
-                   </Sidebar>
-                   <Content>
-                     <Row>
-                       <Card title="Table">
-                         <FieldTable
-                           schema
-                           fieldName="marketplaceCategories"
-                         />
-                       </Card>
-                     </Row>
-                   </Content>
-                 </>;
-               }
-             }
-        </FetchQuery>
-      </Body>
-    </>,
+    <Router>
+      ...{
+           route =>
+             <>
+               <Header> {ReasonReact.string("GraphQL Admin")} </Header>
+               <Body>
+                 <FetchQuery query=Schema.introspectionQuery>
+                   ...{
+                        introspectionRes => {
+                          let schema =
+                            Schema.decodeIntrospectionQuery(introspectionRes);
+                          <>
+                            <Sidebar>
+                              {
+                                schema.queryFields
+                                ->List.map(({name}) =>
+                                    <SidebarItem
+                                      url={"/src/#" ++ name} key=name>
+                                      {ReasonReact.string(name)}
+                                    </SidebarItem>
+                                  )
+                                ->List.toArray
+                                ->ReasonReact.array
+                              }
+                            </Sidebar>
+                            <Content>
+                              {
+                                switch (route) {
+                                | Router.Index =>
+                                  ReasonReact.string(
+                                    "Select query field in sidebar",
+                                  )
+                                | Router.QueryField(field) =>
+                                  <Row>
+                                    <Card title="Table">
+                                      <FieldTable schema fieldName=field />
+                                    </Card>
+                                  </Row>
+                                }
+                              }
+                            </Content>
+                          </>;
+                        }
+                      }
+                 </FetchQuery>
+               </Body>
+             </>
+         }
+    </Router>,
 };

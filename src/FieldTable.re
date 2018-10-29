@@ -36,7 +36,11 @@ let make = (~schema: Schema.t, ~fieldName: string, _children) => {
         ->List.keep(field => field.type_->Schema.isDisplayable)
         ->List.map(field => field.name)
         |> String.concat(" ");
-      <FetchQuery query={"{ " ++ fieldName ++ " { " ++ queryFields ++ " } }"}>
+      /* use fieldName as component key to force re-mount (and reset state)
+         when field name changes */
+      <FetchQuery
+        key=fieldName
+        query={"{ " ++ fieldName ++ " { " ++ queryFields ++ " } }"}>
         ...(
              tableRes => {
                let json =

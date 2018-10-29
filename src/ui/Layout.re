@@ -36,11 +36,11 @@ module Sidebar = {
 module SidebarItem = {
   let component = ReasonReact.statelessComponent("Layout.SidebarItem");
 
-  let make = children => {
+  let make = (~url, children) => {
     ...component,
     render: _self =>
       <li className="nav-item">
-        <a className="nav-link" href="colors.html"> ...children </a>
+        <a className="nav-link" href=url> ...children </a>
       </li>,
   };
 };
