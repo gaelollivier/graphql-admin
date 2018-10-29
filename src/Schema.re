@@ -21,7 +21,7 @@ and type_ = {
   ofType: option(type_),
 };
 
-type graphQLSchema = {
+type t = {
   queryFields: list(field),
   types: Map.String.t(type_),
 };
@@ -77,9 +77,9 @@ let decodeIntrospectionQuery = (introspectionResult: Js.Json.t) => {
 
 /* Displayable types are scalars, enums, or list/non null of displayable type */
 let rec isDisplayable = (type_: type_) =>
-  switch (type_.kind, type_.ofType) {
-  | (Scalar | Enum, _) => true
-  | (List | NonNull, Some(ofType)) => isDisplayable(ofType)
+  switch (type_) {
+  | {kind: Scalar | Enum} => true
+  | {kind: List | NonNull, ofType: Some(ofType)} => isDisplayable(ofType)
   | _ => false
   };
 
@@ -103,6 +103,12 @@ let decodeField = (type_: type_, name: string, json: Js.Json.t) => {
   | Some(value) => value
   };
 };
+
+let unwrapNonNull = (type_: type_) =>
+  switch (type_) {
+  | {kind: NonNull, ofType: Some(ofType)} => ofType
+  | _ => type_
+  };
 
 let introspectionQuery = "query IntrospectionQuery {
     __schema {
