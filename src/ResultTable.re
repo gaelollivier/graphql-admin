@@ -2,18 +2,14 @@ open Belt;
 
 let component = ReasonReact.statelessComponent("ResultTable");
 
-let decodeRow = (displayableFields, json) =>
+let decodeRow = (displayableFields: list(Schema.field), json) =>
   Table.(
     <Row key=Json.Decode.(json |> field("id", string))>
       {
         displayableFields
-        ->List.map(name =>
+        ->List.map(({name, type_}) =>
             <Cell key=name>
-              Json.Decode.(
-                (json |> optional(field(name, string)))
-                ->Option.getWithDefault("")
-                ->ReasonReact.string
-              )
+              {(json |> Schema.decodeField(type_, name))->ReasonReact.string}
             </Cell>
           )
         ->List.toArray
@@ -28,19 +24,14 @@ let make = (~json: Js.Json.t, ~rowType: Schema.type_, _children) => {
     let displayableFields =
       rowType.fields
       ->Option.getExn
-      ->List.keep(field => field.type_.kind == "SCALAR")
-      ->List.map(field => field.name);
-    let rows =
-      Json.Decode.(
-        json
-        |> at(["data", "licenses"], array(decodeRow(displayableFields)))
-      );
+      ->List.keep(field => field.type_->Schema.isDisplayable);
+    let rows = Json.Decode.(json |> array(decodeRow(displayableFields)));
     Table.(
       <Table>
         <Head>
           {
             displayableFields
-            ->List.map(name =>
+            ->List.map(({name}) =>
                 <HeadColumn key=name> {ReasonReact.string(name)} </HeadColumn>
               )
             ->List.toArray

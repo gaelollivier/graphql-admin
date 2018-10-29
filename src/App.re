@@ -10,13 +10,25 @@ let make = _children => {
            introspectionRes => {
              let schema = Schema.decodeIntrospectionQuery(introspectionRes);
              /* schema.queryFields->List.forEach(field => Js.log(field.name)); */
-             let licenseType = schema.types->Map.String.getExn("License");
+             let fieldName = "marketplaceCategories";
+             let rowType =
+               schema.types->Map.String.getExn("MarketplaceCategory");
+             let licenseFields =
+               rowType.fields
+               ->Option.getExn
+               ->List.keep(field => field.type_->Schema.isDisplayable)
+               ->List.map(field => field.name)
+               |> String.concat(" ");
              <Layout>
                <FetchQuery
-                 query="{ licenses { id description implementation nickname spdxId url } }">
+                 query={"{ " ++ fieldName ++ " { " ++ licenseFields ++ " } }"}>
                  ...{
-                      tableRes =>
-                        <ResultTable json=tableRes rowType=licenseType />
+                      tableRes => {
+                        let json =
+                          tableRes
+                          |> Json.Decode.at(["data", fieldName], x => x);
+                        <ResultTable json rowType />;
+                      }
                     }
                </FetchQuery>
              </Layout>;
