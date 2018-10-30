@@ -22,8 +22,7 @@ let make = _children => {
                               {
                                 schema.queryFields
                                 ->List.map(({name}) =>
-                                    <SidebarItem
-                                      url={"/src/#" ++ name} key=name>
+                                    <SidebarItem url={"/#" ++ name} key=name>
                                       {ReasonReact.string(name)}
                                     </SidebarItem>
                                   )
