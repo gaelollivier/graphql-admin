@@ -1,22 +1,28 @@
 open Belt;
 
-/* For a given query field, returns the type of result items
+/* For a given query field, returns the list of fields within the result items
    For now, only support list of objects */
-let getRowType =
-    (schema: Schema.t, fieldName: string): Result.t(Schema.type_, string) => {
+let getRowFields =
+    (schema: Schema.t, fieldName: string)
+    : Result.t(list(Schema.field), string) => {
   let fieldType =
     schema.queryFields
     ->List.getBy(field => field.name == fieldName)
     ->Option.getExn.
-      type_
+      typeRef
     ->Schema.unwrapNonNull;
   switch (fieldType) {
-  | {kind: Schema.List, ofType: Some(itemType)} =>
+  | List(itemType) =>
     let typeRef = itemType->Schema.unwrapNonNull;
     switch (typeRef) {
-    | {kind: Schema.Object} =>
-      Result.Ok(schema.types->Map.String.getExn(typeRef.name->Option.getExn))
-    | _ => Result.Error("Items should be objects")
+    | NonNull(_)
+    | List(_) => Result.Error("Invalid field type")
+    | Type(name) =>
+      let type_ = schema.types->Map.String.getExn(name);
+      switch (type_) {
+      | Object(name, fields) => Result.Ok(fields)
+      | _ => Result.Error("Items should be objects")
+      };
     };
   | _ => Result.Error("Only support lists")
   };
@@ -27,12 +33,11 @@ let component = ReasonReact.statelessComponent("FielTable");
 let make = (~schema: Schema.t, ~fieldName: string, _children) => {
   ...component,
   render: _self =>
-    switch (getRowType(schema, fieldName)) {
+    switch (getRowFields(schema, fieldName)) {
     | Result.Error(err) => ReasonReact.string("Unsupported type: " ++ err)
-    | Result.Ok(rowType) =>
+    | Result.Ok(fields) =>
       let queryFields =
-        rowType.fields
-        ->Option.getExn
+        fields
         ->List.keep(field => field.type_->Schema.isDisplayable)
         ->List.map(field => field.name)
         |> String.concat(" ");
