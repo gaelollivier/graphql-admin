@@ -1,29 +1,36 @@
 open Belt;
 
-type field = {
-  name: string,
-  typeRef,
-}
-and inputField = {
-  name: string,
-  typeRef,
-}
-and type_ =
+/* Represents a top-level graphql type, such as "String", "Account", "Query", ... */
+type type_ =
   | Scalar(string)
   | Object(string, list(field))
   | Interface(string)
   | Union(string)
   | Enum(string)
   | InputObject(string, list(inputField))
+/* object field */
+and field = {
+  name: string,
+  typeRef,
+}
+/* input object field */
+and inputField = {
+  name: string,
+  typeRef,
+}
+/*
+ * typeRef is used to reference field types. They are separated from main type
+ * so we don't need to bother with List/NonNull for top-level types.
+ * Also, referencing a top-level type is done through `Lazy` so we can fully
+ * represent a schema with cyclic references
+ */
 and typeRef =
-  | Type(string)
+  | Type(Lazy.t(type_))
   | List(typeRef)
   | NonNull(typeRef);
 
-type t = {
-  queryFields: list(field),
-  types: Map.String.t(type_),
-};
+/* schema type */
+type t = {queryFields: list(field)};
 
 /* returns the name for a given type */
 let getTypeName = (type_: type_) =>
@@ -37,12 +44,12 @@ let getTypeName = (type_: type_) =>
   };
 
 /* Displayable types are scalars, enums, or list/non null of displayable type */
-let rec isDisplayable = (schema: t, typeRef: typeRef) =>
+let rec isDisplayable = (typeRef: typeRef) =>
   switch (typeRef) {
   | List(ref_)
-  | NonNull(ref_) => isDisplayable(schema, ref_)
-  | Type(name) =>
-    let type_ = schema.types->Map.String.getExn(name);
+  | NonNull(ref_) => isDisplayable(ref_)
+  | Type(type_) =>
+    let type_ = Lazy.force(type_);
     switch (type_) {
     | Scalar(_)
     | Enum(_) => true
@@ -129,27 +136,7 @@ let introspectionQuery = "query IntrospectionQuery {
 
 /* JSON decoding */
 
-let rec decodeField = json =>
-  Json.Decode.{
-    name: json |> field("name", string),
-    typeRef: json |> field("type", decodeTypeRef),
-  }
-and decodeInputField: Js.Json.t => inputField =
-  json =>
-    Json.Decode.{
-      name: json |> field("name", string),
-      typeRef: json |> field("type", decodeTypeRef),
-    }
-and decodeTypeRef = json => {
-  open Json.Decode;
-  let kind = json |> field("kind", string);
-  switch (kind) {
-  | "LIST" => List(json |> field("ofType", decodeTypeRef))
-  | "NON_NULL" => NonNull(json |> field("ofType", decodeTypeRef))
-  | _ => Type(json |> field("name", string))
-  };
-}
-and decodeType = json => {
+let rec decodeType = (getTypeExn, json) => {
   open Json.Decode;
   let kind = json |> field("kind", string);
   switch (kind) {
@@ -157,7 +144,7 @@ and decodeType = json => {
   | "OBJECT" =>
     Object(
       json |> field("name", string),
-      json |> field("fields", list(decodeField)),
+      json |> field("fields", list(decodeField(getTypeExn))),
     )
   | "INTERFACE" => Interface(json |> field("name", string))
   | "UNION" => Union(json |> field("name", string))
@@ -165,56 +152,88 @@ and decodeType = json => {
   | "INPUT_OBJECT" =>
     InputObject(
       json |> field("name", string),
-      json |> field("fields", list(decodeInputField)),
+      json |> field("inputFields", list(decodeInputField(getTypeExn))),
     )
   | unknown =>
     raise(Json.Decode.DecodeError("Uknown type kind '" ++ unknown ++ "'"))
   };
+}
+and decodeField = (getTypeExn, json) =>
+  Json.Decode.{
+    name: json |> field("name", string),
+    typeRef: json |> field("type", decodeTypeRef(getTypeExn)),
+  }
+and decodeInputField = (getTypeExn, json): inputField =>
+  Json.Decode.{
+    name: json |> field("name", string),
+    typeRef: json |> field("type", decodeTypeRef(getTypeExn)),
+  }
+and decodeTypeRef = (getTypeExn, json) => {
+  open Json.Decode;
+  let kind = json |> field("kind", string);
+  switch (kind) {
+  | "LIST" => List(json |> field("ofType", decodeTypeRef(getTypeExn)))
+  | "NON_NULL" =>
+    NonNull(json |> field("ofType", decodeTypeRef(getTypeExn)))
+  | _ => Type(lazy (getTypeExn(json |> field("name", string))))
+  };
 };
 
 let decodeIntrospectionQuery = (introspectionResult: Js.Json.t) => {
+  /*
+   * We will build map of all top-level types, indexed by name
+   * The map is stored in a reference so we can capture-it within a closure
+   * and pass-it along to JSON decoders. This way, type references within the
+   * schema can be lazily resolved using the types map.
+   */
+  let typesByName = ref(Map.String.empty);
+  let getTypeExn = name => (typesByName^)->Map.String.getExn(name);
   /* decode schema types */
   let types =
     Json.Decode.(
       introspectionResult
-      |> at(["data", "__schema", "types"], array(decodeType))
+      |> at(["data", "__schema", "types"], array(decodeType(getTypeExn)))
     );
   /* index them by name */
-  let typesByName =
+  typesByName :=
     types
     ->Array.map(type_ => (getTypeName(type_), type_))
     ->Map.String.fromArray;
-  /* retrieve query type */
+  /*
+   * NOTE: as an additional validation check, we could traverse all types and
+   * make sure that all type refs are valid (i.e: point to actual types in the types map)
+   * Otherwise, we risk exceptions being thrown when lazily-resolving type references
+   */
   let queryTypeName =
     Json.Decode.(
       introspectionResult
       |> at(["data", "__schema", "queryType", "name"], string)
     );
-  let queryType = typesByName->Map.String.getExn(queryTypeName);
-  switch (queryType) {
-  | Object(_, fields) => {queryFields: fields, types: typesByName}
+  switch (getTypeExn(queryTypeName)) {
+  | Object(_, fields) => {queryFields: fields}
   | _ => raise(Json.Decode.DecodeError("Expected query type to be Object"))
   };
 };
 
-let rec decodeValue = (schema: t, typeRef: typeRef, json: Js.Json.t) =>
+let rec decodeValue = (typeRef: typeRef, json: Js.Json.t) =>
   Json.Decode.(
     switch (typeRef) {
-    | NonNull(ref_) => decodeValue(schema, ref_, json)
+    | NonNull(ref_) => decodeValue(ref_, json)
     | List(ref_) =>
-      (json |> list(x => x))
-      ->List.map(value => decodeValue(schema, ref_, value))
+      (json |> list(x => x))->List.map(value => decodeValue(ref_, value))
       |> String.concat(", ")
-    | Type("String") => string(json)
-    | _ => Json.stringify(json)
+    | Type(type_) =>
+      let type_ = Lazy.force(type_);
+      switch (type_) {
+      | Scalar("String") => string(json)
+      | _ => Json.stringify(json)
+      };
     }
   );
 
-let decodeField = (schema: t, typeRef: typeRef, name: string, json: Js.Json.t) => {
+let decodeField = (typeRef: typeRef, name: string, json: Js.Json.t) => {
   let valueOpt =
-    Json.Decode.(
-      json |> optional(field(name, decodeValue(schema, typeRef)))
-    );
+    Json.Decode.(json |> optional(field(name, decodeValue(typeRef))));
   switch (valueOpt) {
   | None => "NULL"
   | Some(value) => value

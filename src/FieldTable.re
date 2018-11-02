@@ -17,12 +17,11 @@ let getRowFields =
     switch (typeRef) {
     | NonNull(_)
     | List(_) => Result.Error("Invalid field type")
-    | Type(name) =>
-      let type_ = schema.types->Map.String.getExn(name);
-      switch (type_) {
-      | Object(name, fields) => Result.Ok(fields)
+    | Type(type_) =>
+      switch (Lazy.force(type_)) {
+      | Object(_, fields) => Result.Ok(fields)
       | _ => Result.Error("Items should be objects")
-      };
+      }
     };
   | _ => Result.Error("Only support lists")
   };
@@ -35,10 +34,10 @@ let make = (~schema: Schema.t, ~fieldName: string, _children) => {
   render: _self =>
     switch (getRowFields(schema, fieldName)) {
     | Result.Error(err) => ReasonReact.string("Unsupported type: " ++ err)
-    | Result.Ok(fields) =>
+    | Result.Ok(rowFields) =>
       let queryFields =
-        fields
-        ->List.keep(field => field.type_->Schema.isDisplayable)
+        rowFields
+        ->List.keep(field => field.typeRef->Schema.isDisplayable)
         ->List.map(field => field.name)
         |> String.concat(" ");
       /* use fieldName as component key to force re-mount (and reset state)
@@ -50,7 +49,7 @@ let make = (~schema: Schema.t, ~fieldName: string, _children) => {
              tableRes => {
                let json =
                  tableRes |> Json.Decode.at(["data", fieldName], x => x);
-               <ResultTable json rowType />;
+               <ResultTable rowFields json />;
              }
            )
       </FetchQuery>;
