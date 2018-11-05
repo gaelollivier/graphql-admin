@@ -37,12 +37,23 @@ let make = _children => {
                                   ReasonReact.string(
                                     "Select query field in sidebar",
                                   )
-                                | Router.QueryField(field) =>
+                                | Router.QueryField(_field) =>
+                                  let config =
+                                    FieldTable.{
+                                      queryField: "licenses",
+                                      columns: [
+                                        "id",
+                                        "name",
+                                        "nickname",
+                                        "conditions.label",
+                                        "conditions.description",
+                                      ],
+                                    };
                                   <Row>
                                     <Card title="Table">
-                                      <FieldTable schema fieldName=field />
+                                      <FieldTable schema config />
                                     </Card>
-                                  </Row>
+                                  </Row>;
                                 }
                               }
                             </Content>

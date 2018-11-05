@@ -1,57 +1,80 @@
 open Belt;
 
-/* For a given query field, returns the list of fields within the result items
-   For now, only support list of objects */
-let getRowFields =
-    (schema: Schema.t, fieldName: string)
-    : Result.t(list(Schema.field), string) => {
-  let fieldType =
-    schema.queryFields
-    ->List.getBy(field => field.name == fieldName)
-    ->Option.getExn.
-      typeRef
-    ->Schema.unwrapNonNull;
-  switch (fieldType) {
-  | List(itemType) =>
-    let typeRef = itemType->Schema.unwrapNonNull;
-    switch (typeRef) {
-    | NonNull(_)
-    | List(_) => Result.Error("Invalid field type")
-    | Type(type_) =>
-      switch (Lazy.force(type_)) {
-      | Object(_, fields) => Result.Ok(fields)
-      | _ => Result.Error("Items should be objects")
+type config = {
+  queryField: string,
+  columns: list(string),
+};
+
+/*
+ * Build GraphQL query for a given field and sub-selection
+ * Ex: buildFieldQuery("users", ["id", "profile.name", "profile.avatar.url"])
+ * -> "users { id profile { name avatar { url } } }"
+ */
+let rec buildFieldQuery = (field: string, selection: list(string)): string => {
+  let (subFields, _consumed) =
+    /* consumed allows us to keep track of fields we already recursed */
+    selection->List.reduce(("", []), ((acc, consumed), currentSelection) =>
+      if (!currentSelection->String.contains('.')) {
+        (acc ++ " " ++ currentSelection, consumed);
+      } else {
+        let currentField =
+          currentSelection->String.sub(
+            0,
+            currentSelection->String.index('.'),
+          );
+        /* if already consumed, skip this selection */
+        if (consumed->List.has(currentField, (==))) {
+          (acc, consumed);
+        } else {
+          /* extract all sub-selections for current field */
+          let subFields =
+            selection->List.keepMap(field =>
+              if (field |> Js.String.startsWith(currentField ++ ".")) {
+                /* remove prefix to keep only sub-selection name */
+                Some(
+                  field->Js.String.substr(
+                    ~from=field->String.index('.') + 1,
+                  ),
+                );
+              } else {
+                None;
+              }
+            );
+          (
+            acc ++ " " ++ buildFieldQuery(currentField, subFields),
+            [currentField, ...consumed],
+          );
+        };
       }
-    };
-  | _ => Result.Error("Only support lists")
-  };
+    );
+  field ++ " {" ++ subFields ++ " }";
+};
+
+let buildQuery = (config: config): string => {
+  let queryField = buildFieldQuery(config.queryField, config.columns);
+  "{ " ++ queryField ++ " }";
 };
 
 let component = ReasonReact.statelessComponent("FielTable");
 
-let make = (~schema: Schema.t, ~fieldName: string, _children) => {
+let make = (~schema: Schema.t, ~config: config, _children) => {
   ...component,
-  render: _self =>
-    switch (getRowFields(schema, fieldName)) {
-    | Result.Error(err) => ReasonReact.string("Unsupported type: " ++ err)
-    | Result.Ok(rowFields) =>
-      let queryFields =
-        rowFields
-        ->List.keep(field => field.typeRef->Schema.isDisplayable)
-        ->List.map(field => field.name)
-        |> String.concat(" ");
-      /* use fieldName as component key to force re-mount (and reset state)
-         when field name changes */
-      <FetchQuery
-        key=fieldName
-        query={"{ " ++ fieldName ++ " { " ++ queryFields ++ " } }"}>
-        ...(
-             tableRes => {
-               let json =
-                 tableRes |> Json.Decode.at(["data", fieldName], x => x);
-               <ResultTable rowFields json />;
-             }
-           )
-      </FetchQuery>;
-    },
+  render: _self => {
+    let query = buildQuery(config);
+    Js.log(query);
+    /* use query as component key to force re-mount (and reset state)
+       when query changes */
+    <FetchQuery key=query query>
+      ...{
+           tableRes => {
+             let json =
+               tableRes |> Json.Decode.at(["data", config.queryField], x => x);
+             Js.log(json);
+             /* TODO: update ResultTable to display nested results */
+             /* <ResultTable rowFields json />; */
+             ReasonReact.null;
+           }
+         }
+    </FetchQuery>;
+  },
 };
