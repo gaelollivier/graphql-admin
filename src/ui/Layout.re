@@ -101,7 +101,7 @@ module Card = {
           <i className="fa fa-align-justify" />
           {ReasonReact.string(title)}
         </div>
-        <div> ...children </div>
+        <div> <div className="card-body"> ...children </div> </div>
       </div>,
   };
 };

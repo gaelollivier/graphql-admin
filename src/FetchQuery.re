@@ -1,10 +1,15 @@
-let fetchQuery = query => {
+let fetchQuery = (query, variables) => {
   let payload = Js.Dict.empty();
   Js.Dict.set(payload, "query", Js.Json.string(query));
 
+  switch (variables) {
+  | None => ()
+  | Some(variables) => Js.Dict.set(payload, "variables", variables)
+  };
+
   Js.Promise.(
     Fetch.fetchWithInit(
-      "https://api.github.com/graphql",
+      Auth.apiUrl,
       Fetch.RequestInit.make(
         ~method_=Post,
         ~body=
@@ -28,7 +33,7 @@ type action =
 
 let component = ReasonReact.reducerComponent("FetchQuery");
 
-let make = (~query: string, children) => {
+let make = (~query: string, ~variables: option(Js.Json.t)=?, children) => {
   ...component,
   initialState: () => None,
   reducer: (action, _state) =>
@@ -37,7 +42,7 @@ let make = (~query: string, children) => {
     },
   didMount: self =>
     Js.Promise.(
-      fetchQuery(query)
+      fetchQuery(query, variables)
       |> then_(res => {
            self.send(SetResult(res));
            resolve();

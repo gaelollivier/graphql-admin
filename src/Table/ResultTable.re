@@ -34,7 +34,7 @@ let rec renderValue = (column: string, json) =>
 
 let renderRow = (config: TableConfig.t, json) =>
   Table.(
-    <Row key=Json.Decode.(json |> field("id", string))>
+    <Row key=Json.Decode.(json |> field("_id", string))>
       {
         config.columns
         ->List.map(column =>
