@@ -1,10 +1,5 @@
 open Belt;
 
-type config = {
-  queryField: string,
-  columns: list(string),
-};
-
 /*
  * Build GraphQL query for a given field and sub-selection
  * Ex: buildFieldQuery("users", ["id", "profile.name", "profile.avatar.url"])
@@ -50,14 +45,14 @@ let rec buildFieldQuery = (field: string, selection: list(string)): string => {
   field ++ " {" ++ subFields ++ " }";
 };
 
-let buildQuery = (config: config): string => {
+let buildQuery = (config: TableConfig.t): string => {
   let queryField = buildFieldQuery(config.queryField, config.columns);
   "{ " ++ queryField ++ " }";
 };
 
 let component = ReasonReact.statelessComponent("FielTable");
 
-let make = (~schema: Schema.t, ~config: config, _children) => {
+let make = (~config: TableConfig.t, _children) => {
   ...component,
   render: _self => {
     let query = buildQuery(config);
@@ -69,10 +64,7 @@ let make = (~schema: Schema.t, ~config: config, _children) => {
            tableRes => {
              let json =
                tableRes |> Json.Decode.at(["data", config.queryField], x => x);
-             Js.log(json);
-             /* TODO: update ResultTable to display nested results */
-             /* <ResultTable rowFields json />; */
-             ReasonReact.null;
+             <ResultTable config json />;
            }
          }
     </FetchQuery>;

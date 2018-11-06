@@ -2,17 +2,43 @@ open Belt;
 
 let component = ReasonReact.statelessComponent("ResultTable");
 
-let decodeRow = (displayableFields: list(Schema.field), json) =>
+let rec renderValue = (column: string, json) =>
+  if (column->String.contains('.')) {
+    let subField = column->String.sub(0, column->String.index('.'));
+    let subSelection =
+      column->Js.String.substr(~from=column->String.index('.') + 1);
+    let subValue = Json.Decode.(json |> field(subField, x => x));
+    switch (Js.Json.classify(subValue)) {
+    | Js.Json.JSONArray(_) =>
+      let values = Json.Decode.(subValue |> list(renderValue(subSelection)));
+      <ul>
+        {
+          values
+          ->List.mapWithIndex((i, value) =>
+              <li key={string_of_int(i)}> value </li>
+            )
+          ->List.toArray
+          ->ReasonReact.array
+        }
+      </ul>;
+    | _ => ReasonReact.null
+    };
+  } else {
+    let value = Json.Decode.(json |> field(column, x => x));
+    switch (Js.Json.classify(value)) {
+    | Js.Json.JSONString(str) => ReasonReact.string(str)
+    | Js.Json.JSONNull => ReasonReact.string("NULL")
+    | _ => ReasonReact.string(Json.stringify(value))
+    };
+  };
+
+let renderRow = (config: TableConfig.t, json) =>
   Table.(
     <Row key=Json.Decode.(json |> field("id", string))>
       {
-        displayableFields
-        ->List.map(({name, typeRef}) =>
-            <Cell key=name>
-              {
-                (json |> Schema.decodeField(typeRef, name))->ReasonReact.string
-              }
-            </Cell>
+        config.columns
+        ->List.map(column =>
+            <Cell key=column> {json |> renderValue(column)} </Cell>
           )
         ->List.toArray
         ->ReasonReact.array
@@ -20,26 +46,24 @@ let decodeRow = (displayableFields: list(Schema.field), json) =>
     </Row>
   );
 
-let make = (~rowFields: list(Schema.field), ~json: Js.Json.t, _children) => {
+let make = (~config: TableConfig.t, ~json: Js.Json.t, _children) => {
   ...component,
-  render: _self => {
-    let displayableFields =
-      rowFields->List.keep(field => field.typeRef->Schema.isDisplayable);
-    let rows = Json.Decode.(json |> array(decodeRow(displayableFields)));
+  render: _self =>
     Table.(
       <Table>
         <Head>
           {
-            displayableFields
-            ->List.map(({name}) =>
-                <HeadColumn key=name> {ReasonReact.string(name)} </HeadColumn>
+            config.columns
+            ->List.map(column =>
+                <HeadColumn key=column>
+                  {ReasonReact.string(column)}
+                </HeadColumn>
               )
             ->List.toArray
             ->ReasonReact.array
           }
         </Head>
-        <Rows> ...rows </Rows>
+        <Rows> ...Json.Decode.(json |> array(renderRow(config))) </Rows>
       </Table>
-    );
-  },
+    ),
 };

@@ -60,10 +60,18 @@ let rec isDisplayable = (typeRef: typeRef) =>
     };
   };
 
-let unwrapNonNull = (typeRef: typeRef) =>
+/* retrieve the underlying type of a type ref, unwrapping any list/non null specifiers */
+let rec getReferencedTypeExn = (typeRef: typeRef) =>
   switch (typeRef) {
-  | NonNull(ref_) => ref_
-  | _ => typeRef
+  | Type(ref_) => Lazy.force(ref_)
+  | NonNull(ref_)
+  | List(ref_) => getReferencedTypeExn(ref_)
+  };
+
+let getFieldsExn = (type_: type_) =>
+  switch (type_) {
+  | Object(_, fields) => fields
+  | _ => raise(Invalid_argument("Expected object type"))
   };
 
 let introspectionQuery = "query IntrospectionQuery {
@@ -212,30 +220,5 @@ let decodeIntrospectionQuery = (introspectionResult: Js.Json.t) => {
   switch (getTypeExn(queryTypeName)) {
   | Object(_, fields) => {queryFields: fields}
   | _ => raise(Json.Decode.DecodeError("Expected query type to be Object"))
-  };
-};
-
-let rec decodeValue = (typeRef: typeRef, json: Js.Json.t) =>
-  Json.Decode.(
-    switch (typeRef) {
-    | NonNull(ref_) => decodeValue(ref_, json)
-    | List(ref_) =>
-      (json |> list(x => x))->List.map(value => decodeValue(ref_, value))
-      |> String.concat(", ")
-    | Type(type_) =>
-      let type_ = Lazy.force(type_);
-      switch (type_) {
-      | Scalar("String") => string(json)
-      | _ => Json.stringify(json)
-      };
-    }
-  );
-
-let decodeField = (typeRef: typeRef, name: string, json: Js.Json.t) => {
-  let valueOpt =
-    Json.Decode.(json |> optional(field(name, decodeValue(typeRef))));
-  switch (valueOpt) {
-  | None => "NULL"
-  | Some(value) => value
   };
 };
