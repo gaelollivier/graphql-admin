@@ -38,7 +38,11 @@ let make = _children => {
                                   let config =
                                     TableConfig.{
                                       queryField,
-                                      columns: ["_id", "email"],
+                                      columns: [
+                                        "_id",
+                                        "email",
+                                        "profile.firstname",
+                                      ],
                                       schema,
                                     };
                                   <Row>

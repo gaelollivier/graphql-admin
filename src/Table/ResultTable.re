@@ -21,7 +21,7 @@ let rec renderValue = (column: string, json) =>
           ->ReasonReact.array
         }
       </ul>;
-    | _ => ReasonReact.null
+    | _ => subValue |> renderValue(subSelection)
     };
   } else {
     let value = Json.Decode.(json |> field(column, x => x));
