@@ -1,4 +1,4 @@
-type state = Config.t;
+type state = Config.config;
 
 type action =
   | SetUrl(string)

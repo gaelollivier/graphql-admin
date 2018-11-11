@@ -1,4 +1,4 @@
-let fetchQuery = (query, variables) => {
+let fetchQuery = (config: Config.config, query, variables) => {
   let payload = Js.Dict.empty();
   Js.Dict.set(payload, "query", Js.Json.string(query));
 
@@ -9,7 +9,7 @@ let fetchQuery = (query, variables) => {
 
   Js.Promise.(
     Fetch.fetchWithInit(
-      Auth.apiUrl,
+      config.apiUrl,
       Fetch.RequestInit.make(
         ~method_=Post,
         ~body=
@@ -17,7 +17,7 @@ let fetchQuery = (query, variables) => {
         ~headers=
           Fetch.HeadersInit.make({
             "Content-Type": "application/json",
-            "Authorization": Auth.token,
+            "Authorization": config.authHeader,
           }),
         (),
       ),
@@ -26,32 +26,50 @@ let fetchQuery = (query, variables) => {
   );
 };
 
-type state = option(Js.Json.t);
+module Query = {
+  type state = option(Js.Json.t);
 
-type action =
-  | SetResult(Js.Json.t);
+  type action =
+    | SetResult(Js.Json.t);
 
-let component = ReasonReact.reducerComponent("FetchQuery");
+  let component = ReasonReact.reducerComponent("FetchQuery.Query");
+
+  let make =
+      (
+        ~config: Config.config,
+        ~query: string,
+        ~variables: option(Js.Json.t)=?,
+        children,
+      ) => {
+    ...component,
+    initialState: () => None,
+    reducer: (action, _state) =>
+      switch (action) {
+      | SetResult(res) => ReasonReact.Update(Some(res))
+      },
+    didMount: self =>
+      Js.Promise.(
+        fetchQuery(config, query, variables)
+        |> then_(res => {
+             self.send(SetResult(res));
+             resolve();
+           })
+      )
+      |> ignore,
+    render: self =>
+      switch (self.state) {
+      | Some(res) => children(res)
+      | None => ReasonReact.string("Loading...")
+      },
+  };
+};
+
+let component = ReasonReact.statelessComponent("FetchQuery");
 
 let make = (~query: string, ~variables: option(Js.Json.t)=?, children) => {
   ...component,
-  initialState: () => None,
-  reducer: (action, _state) =>
-    switch (action) {
-    | SetResult(res) => ReasonReact.Update(Some(res))
-    },
-  didMount: self =>
-    Js.Promise.(
-      fetchQuery(query, variables)
-      |> then_(res => {
-           self.send(SetResult(res));
-           resolve();
-         })
-    )
-    |> ignore,
-  render: self =>
-    switch (self.state) {
-    | Some(res) => children(res)
-    | None => ReasonReact.string("Loading...")
-    },
+  render: _self =>
+    <Config.Context.Consumer>
+      ...{config => <Query config query ?variables> ...children </Query>}
+    </Config.Context.Consumer>,
 };

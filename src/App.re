@@ -1,10 +1,10 @@
 open Belt;
 open Layout;
 
-type state = option(Config.t);
+type state = option(Config.config);
 
 type action =
-  | SetConfig(Config.t);
+  | SetConfig(Config.config);
 
 let component = ReasonReact.reducerComponent("App");
 
@@ -20,7 +20,21 @@ let make = _children => {
     },
   reducer: (action, _state) =>
     switch (action) {
-    | SetConfig(config) => ReasonReact.Update(Some(config))
+    | SetConfig(config) =>
+      ReasonReact.UpdateWithSideEffects(
+        Some(config),
+        /* store config in local storage */
+        (
+          _self =>
+            Dom.Storage.(
+              localStorage
+              |> setItem(
+                   localStorageNamespace,
+                   Config.encode(config)->Json.stringify,
+                 )
+            )
+        ),
+      )
     },
   render: self =>
     <Router>
@@ -36,56 +50,56 @@ let make = _children => {
                        setConfig=(config => self.send(SetConfig(config)))
                      />
                    | Some(config) =>
-                     Js.log(config);
-                     /* TODO: ConfigProvider */
-                     <FetchQuery query=Schema.introspectionQuery>
-                       ...(
-                            introspectionRes => {
-                              let schema =
-                                Schema.decodeIntrospectionQuery(
-                                  introspectionRes,
-                                );
-                              <>
-                                <Sidebar>
-                                  {
-                                    schema.queryFields
-                                    ->List.map(({name}) =>
-                                        <SidebarItem
-                                          url={"/#" ++ name} key=name>
-                                          {ReasonReact.string(name)}
-                                        </SidebarItem>
-                                      )
-                                    ->List.toArray
-                                    ->ReasonReact.array
-                                  }
-                                </Sidebar>
-                                <Content>
-                                  {
-                                    switch (route) {
-                                    | _ =>
-                                      let queryField = "accounts";
-                                      let config =
-                                        TableConfig.{
-                                          queryField,
-                                          columns: [
-                                            "_id",
-                                            "email",
-                                            "profile.firstname",
-                                          ],
-                                          schema,
-                                        };
-                                      <Row>
-                                        <Card title=queryField>
-                                          <FieldTable config />
-                                        </Card>
-                                      </Row>;
+                     <Config.Context.Provider value=config>
+                       <FetchQuery query=Schema.introspectionQuery>
+                         ...(
+                              introspectionRes => {
+                                let schema =
+                                  Schema.decodeIntrospectionQuery(
+                                    introspectionRes,
+                                  );
+                                <>
+                                  <Sidebar>
+                                    {
+                                      schema.queryFields
+                                      ->List.map(({name}) =>
+                                          <SidebarItem
+                                            url={"/#" ++ name} key=name>
+                                            {ReasonReact.string(name)}
+                                          </SidebarItem>
+                                        )
+                                      ->List.toArray
+                                      ->ReasonReact.array
                                     }
-                                  }
-                                </Content>
-                              </>;
-                            }
-                          )
-                     </FetchQuery>;
+                                  </Sidebar>
+                                  <Content>
+                                    {
+                                      switch (route) {
+                                      | _ =>
+                                        let queryField = "accounts";
+                                        let config =
+                                          TableConfig.{
+                                            queryField,
+                                            columns: [
+                                              "_id",
+                                              "email",
+                                              "profile.firstname",
+                                            ],
+                                            schema,
+                                          };
+                                        <Row>
+                                          <Card title=queryField>
+                                            <FieldTable config />
+                                          </Card>
+                                        </Row>;
+                                      }
+                                    }
+                                  </Content>
+                                </>;
+                              }
+                            )
+                       </FetchQuery>
+                     </Config.Context.Provider>
                    }
                  }
                </Body>
