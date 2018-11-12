@@ -1,4 +1,4 @@
-let fetchQuery = (config: Config.config, query, variables) => {
+let fetchQuery = (config: Config.t, query, variables) => {
   let payload = Js.Dict.empty();
   Js.Dict.set(payload, "query", Js.Json.string(query));
 
@@ -36,7 +36,7 @@ module Query = {
 
   let make =
       (
-        ~config: Config.config,
+        ~config: Config.t,
         ~query: string,
         ~variables: option(Js.Json.t)=?,
         children,

@@ -218,7 +218,13 @@ let decodeIntrospectionQuery = (introspectionResult: Js.Json.t) => {
       |> at(["data", "__schema", "queryType", "name"], string)
     );
   switch (getTypeExn(queryTypeName)) {
-  | Object(_, fields) => {queryFields: fields}
+  | Object(_, fields) => {
+      queryFields:
+        /* sort query fields alphabetically */
+        fields->List.sort(({name: nameA}, {name: nameB}) =>
+          String.compare(nameA, nameB)
+        ),
+    }
   | _ => raise(Json.Decode.DecodeError("Expected query type to be Object"))
   };
 };

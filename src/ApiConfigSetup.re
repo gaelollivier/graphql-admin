@@ -1,10 +1,10 @@
-type state = Config.config;
+type state = Config.t;
 
 type action =
   | SetUrl(string)
   | SetAuthHeader(string);
 
-let component = ReasonReact.reducerComponent("ConfigPage");
+let component = ReasonReact.reducerComponent("ApiConfigSetup");
 
 let make = (~setConfig, _children) => {
   ...component,

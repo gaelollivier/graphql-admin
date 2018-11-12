@@ -1,10 +1,10 @@
 open Belt;
 open Layout;
 
-type state = option(Config.config);
+type state = option(Config.t);
 
 type action =
-  | SetConfig(Config.config);
+  | SetConfig(Config.t);
 
 let component = ReasonReact.reducerComponent("App");
 
@@ -73,27 +73,14 @@ let make = _children => {
                                     }
                                   </Sidebar>
                                   <Content>
-                                    {
-                                      switch (route) {
-                                      | _ =>
-                                        let queryField = "accounts";
-                                        let config =
-                                          TableConfig.{
-                                            queryField,
-                                            columns: [
-                                              "_id",
-                                              "email",
-                                              "profile.firstname",
-                                            ],
-                                            schema,
-                                          };
-                                        <Row>
-                                          <Card title=queryField>
-                                            <FieldTable config />
-                                          </Card>
-                                        </Row>;
-                                      }
-                                    }
+                                    <Row>
+                                      <Card title="Table config">
+                                        <TableConfigSetup
+                                          schema
+                                          setConfig={_ => ()}
+                                        />
+                                      </Card>
+                                    </Row>
                                   </Content>
                                 </>;
                               }

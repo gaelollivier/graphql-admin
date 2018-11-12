@@ -1,8 +1,19 @@
+open Belt;
+
 let component = ReasonReact.statelessComponent("Form");
 
 let make = (~onSubmit, children) => {
   ...component,
-  render: _self => <form onSubmit={_ => onSubmit()}> ...children </form>,
+  render: _self =>
+    <form
+      onSubmit={
+        event => {
+          event->ReactEvent.Form.preventDefault;
+          onSubmit();
+        }
+      }>
+      ...children
+    </form>,
 };
 
 module Group = {
@@ -37,6 +48,34 @@ module TextInput = {
         value
         onChange={event => onChange(event->ReactEvent.Form.target##value)}
       />,
+  };
+};
+
+module Select = {
+  let component = ReasonReact.statelessComponent("Form.Select");
+
+  type option = {
+    value: string,
+    label: string,
+  };
+
+  let make = (~id, ~value, ~options, ~onChange, _children) => {
+    ...component,
+    render: _self =>
+      <select
+        className="form-control"
+        id
+        value
+        onChange={event => onChange(event->ReactEvent.Form.target##value)}>
+        {
+          options
+          ->List.map(({value, label}) =>
+              <option key=value value> {ReasonReact.string(label)} </option>
+            )
+          ->List.toArray
+          ->ReasonReact.array
+        }
+      </select>,
   };
 };
 
