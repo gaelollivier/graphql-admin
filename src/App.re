@@ -39,7 +39,7 @@ let make = _children => {
   render: self =>
     <Router>
       ...{
-           route =>
+           _route =>
              <>
                <Header> {ReasonReact.string("GraphQL Admin")} </Header>
                <Body>
