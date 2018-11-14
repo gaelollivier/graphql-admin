@@ -28,9 +28,9 @@ module Group = {
 module Label = {
   let component = ReasonReact.statelessComponent("Form.Label");
 
-  let make = (~for_, children) => {
+  let make = (~for_=?, children) => {
     ...component,
-    render: _self => <label htmlFor=for_> ...children </label>,
+    render: _self => <label htmlFor=?for_> ...children </label>,
   };
 };
 
