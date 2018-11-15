@@ -1,12 +1,14 @@
 type t = {
   apiUrl: string,
   authHeader: string,
+  table: option(TableConfig.t),
 };
 
 let decode = json =>
   Json.Decode.{
     apiUrl: json |> field("apiUrl", string),
     authHeader: json |> field("authHeader", string),
+    table: None,
   };
 
 let encode = config =>
@@ -23,5 +25,5 @@ type config = t;
 module Context =
   Context.MakePair({
     type t = config;
-    let defaultValue = {apiUrl: "", authHeader: ""};
+    let defaultValue = {apiUrl: "", authHeader: "", table: None};
   });

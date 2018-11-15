@@ -74,12 +74,30 @@ let make = _children => {
                                   </Sidebar>
                                   <Content>
                                     <Row>
-                                      <Card title="Table config">
-                                        <TableConfigSetup
-                                          schema
-                                          setConfig={_ => ()}
-                                        />
-                                      </Card>
+                                      {
+                                        switch (config.table) {
+                                        | None =>
+                                          <Card title="Table config">
+                                            <TableConfigSetup
+                                              schema
+                                              setConfig=(
+                                                tableConfig =>
+                                                  self.send(
+                                                    SetConfig({
+                                                      ...config,
+                                                      table:
+                                                        Some(tableConfig),
+                                                    }),
+                                                  )
+                                              )
+                                            />
+                                          </Card>
+                                        | Some(tableConfig) =>
+                                          <Card title={tableConfig.queryField}>
+                                            <FieldTable config=tableConfig />
+                                          </Card>
+                                        }
+                                      }
                                     </Row>
                                   </Content>
                                 </>;

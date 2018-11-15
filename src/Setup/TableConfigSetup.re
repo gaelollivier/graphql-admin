@@ -1,72 +1,12 @@
 open Belt;
-
 let str = ReasonReact.string;
-
-module FieldsList = {
-  /* state is list of expanded fields */
-  type state = list(string);
-
-  type action =
-    | Toggle(string);
-
-  let component = ReasonReact.reducerComponent("TableConfigSetup.FieldsList");
-
-  let rec make = (~fields: list(Schema.field), _children) => {
-    ...component,
-    initialState: () => ([]: state),
-    reducer: (action, state) =>
-      switch (action) {
-      | Toggle(toggleField) =>
-        switch (state->List.getBy(field => field == toggleField)) {
-        | Some(_) =>
-          ReasonReact.Update(state->List.keep(field => field != toggleField))
-        | None => ReasonReact.Update([toggleField, ...state])
-        }
-      },
-    render: ({state: expanded, send}) =>
-      <ul>
-        {
-          fields
-          ->List.map(field =>
-              <li key={field.name}>
-                {
-                  switch (field.typeRef->Schema.getReferencedTypeExn) {
-                  | Schema.Object(name, fields) =>
-                    <>
-                      <a
-                        onClick=(_ => send(Toggle(name)))
-                        style={ReactDOMRe.Style.make(~cursor="pointer", ())}>
-                        {str(field.name)}
-                      </a>
-                      {
-                        switch (expanded->List.getBy(field => field == name)) {
-                        | None => ReasonReact.null
-                        /* for recusion, we can't use JSX so we call `make` manually */
-                        | Some(_) => ReasonReact.element(make(~fields, [||]))
-                        }
-                      }
-                    </>
-                  | _ =>
-                    <label htmlFor={field.name}>
-                      <input id={field.name} type_="checkbox" />
-                      {str(" " ++ field.name)}
-                    </label>
-                  }
-                }
-              </li>
-            )
-          ->List.toArray
-          ->ReasonReact.array
-        }
-      </ul>,
-  };
-};
 
 type state = TableConfig.t;
 
 type action =
   | SetName(string)
-  | SetQueryField(string);
+  | SetQueryField(string)
+  | ToggleColumn(string);
 
 let component = ReasonReact.reducerComponent("TableConfigSetup");
 
@@ -79,6 +19,19 @@ let make = (~schema: Schema.t, ~setConfig, _children) => {
     | SetName(name) => ReasonReact.Update(TableConfig.{...state, name})
     | SetQueryField(queryField) =>
       ReasonReact.Update(TableConfig.{...state, queryField})
+    | ToggleColumn(toggleColumn) =>
+      switch (state.columns->List.getBy(column => column == toggleColumn)) {
+      | Some(_) =>
+        ReasonReact.Update({
+          ...state,
+          columns: state.columns->List.keep(column => column != toggleColumn),
+        })
+      | None =>
+        ReasonReact.Update({
+          ...state,
+          columns: List.concat(state.columns, [toggleColumn]),
+        })
+      }
     },
   render: ({send, state}) =>
     <Form onSubmit={() => setConfig(state)}>
@@ -133,7 +86,11 @@ let make = (~schema: Schema.t, ~setConfig, _children) => {
           <Layout.Row>
             <Form.Group>
               <Form.Label> {str("Columns")} </Form.Label>
-              <FieldsList fields />
+              <FieldsList
+                fields
+                toggleField=(field => send(ToggleColumn(field)))
+                selection={state.columns}
+              />
             </Form.Group>
           </Layout.Row>;
         };
