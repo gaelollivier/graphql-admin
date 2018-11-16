@@ -228,3 +228,12 @@ let decodeIntrospectionQuery = (introspectionResult: Js.Json.t) => {
   | _ => raise(Json.Decode.DecodeError("Expected query type to be Object"))
   };
 };
+
+/* create alias so we can access schema type from nested module */
+type schema = t;
+
+module Context =
+  Context.MakePair({
+    type t = schema;
+    let defaultValue = {queryFields: []};
+  });

@@ -1,8 +1,8 @@
 open Belt;
 
-let isPaginated = (config: TableConfig.t): bool => {
+let isPaginated = (schema: Schema.t, config: TableConfig.t): bool => {
   let rowType =
-    config.schema.queryFields
+    schema.queryFields
     ->List.getBy(field => field.name == config.queryField)
     ->Option.getExn.
       typeRef;
@@ -19,9 +19,14 @@ let component = ReasonReact.statelessComponent("FielTable");
 let make = (~config: TableConfig.t, _children) => {
   ...component,
   render: _self =>
-    if (isPaginated(config)) {
-      <PaginatedTable config />;
-    } else {
-      <SimpleTable config />;
-    },
+    <Schema.Context.Consumer>
+      ...{
+           schema =>
+             if (isPaginated(schema, config)) {
+               <PaginatedTable config />;
+             } else {
+               <SimpleTable config />;
+             }
+         }
+    </Schema.Context.Consumer>,
 };

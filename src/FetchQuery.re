@@ -70,6 +70,6 @@ let make = (~query: string, ~variables: option(Js.Json.t)=?, children) => {
   ...component,
   render: _self =>
     <Config.Context.Consumer>
-      ...{config => <Query config query ?variables> ...children </Query>}
+      ...{({config}) => <Query config query ?variables> ...children </Query>}
     </Config.Context.Consumer>,
 };
