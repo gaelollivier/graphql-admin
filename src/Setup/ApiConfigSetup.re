@@ -8,7 +8,7 @@ let component = ReasonReact.reducerComponent("ApiConfigSetup");
 
 let make = (~setConfig, _children) => {
   ...component,
-  initialState: () => Config.{apiUrl: "", authHeader: "", table: None},
+  initialState: () => Config.{apiUrl: "", authHeader: "", tables: []},
   reducer: (action, state) =>
     switch (action) {
     | SetUrl(apiUrl) => ReasonReact.Update(Config.{...state, apiUrl})

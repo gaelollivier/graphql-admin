@@ -1,7 +1,7 @@
 type t = {
   apiUrl: string,
   authHeader: string,
-  table: option(TableConfig.t),
+  tables: list(TableConfig.t),
 };
 
 let encode = config =>
@@ -9,7 +9,7 @@ let encode = config =>
     object_([
       ("apiUrl", string(config.apiUrl)),
       ("authHeader", string(config.authHeader)),
-      ("table", config.table |> nullable(TableConfig.encode)),
+      ("tables", config.tables |> list(TableConfig.encode)),
     ])
   );
 
@@ -17,7 +17,7 @@ let decode = json =>
   Json.Decode.{
     apiUrl: json |> field("apiUrl", string),
     authHeader: json |> field("authHeader", string),
-    table: json |> optional(field("table", TableConfig.decode)),
+    tables: json |> field("tables", list(TableConfig.decode)),
   };
 
 type context = {
@@ -33,7 +33,7 @@ module Context =
       config: {
         apiUrl: "",
         authHeader: "",
-        table: None,
+        tables: [],
       },
       setConfig: _config => (),
     };

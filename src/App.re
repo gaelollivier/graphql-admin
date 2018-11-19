@@ -1,5 +1,3 @@
-open Layout;
-
 let component = ReasonReact.statelessComponent("App");
 
 let make = _children => {
@@ -7,16 +5,28 @@ let make = _children => {
   render: _self =>
     <Router>
       ...{
-           _route =>
+           route =>
              <>
-               <Header> {ReasonReact.string("GraphQL Admin")} </Header>
-               <Body>
+               <Layout.Header>
+                 {ReasonReact.string("GraphQL Admin")}
+               </Layout.Header>
+               <Layout.Body>
                  <ConfigWrapper>
                    <FetchSchema>
-                     <> <Sidebar /> <Content> <HomePage /> </Content> </>
+                     <>
+                       <Sidebar />
+                       <Layout.Content>
+                         {
+                           switch (route) {
+                           | Router.AddView => <AddView />
+                           | Router.View(name) => <View name />
+                           }
+                         }
+                       </Layout.Content>
+                     </>
                    </FetchSchema>
                  </ConfigWrapper>
-               </Body>
+               </Layout.Body>
              </>
          }
     </Router>,
