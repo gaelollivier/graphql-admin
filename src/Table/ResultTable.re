@@ -9,6 +9,7 @@ let rec renderValue = (column: string, json) =>
       column->Js.String.substr(~from=column->String.index('.') + 1);
     let subValue = Json.Decode.(json |> field(subField, x => x));
     switch (Js.Json.classify(subValue)) {
+    | Js.Json.JSONNull => ReasonReact.string("NULL")
     | Js.Json.JSONArray(_) =>
       let values = Json.Decode.(subValue |> list(renderValue(subSelection)));
       <ul>

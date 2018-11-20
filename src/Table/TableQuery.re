@@ -51,15 +51,21 @@ let buildQuery = (config: TableConfig.t): string => {
 };
 
 let buildPaginatedQuery =
-    (config: TableConfig.t, currentPage: int): (string, Js.Json.t) => {
-  let nodesField = buildFieldQuery("nodes", config.columns);
+    (~config: TableConfig.t, ~currentPage: int, ~itemsPerPage: int)
+    : (string, Js.Json.t) => {
+  let nodesFields =
+    /* Automatically add _id selection if not included */
+    switch (config.columns->List.getBy(column => column == "_id")) {
+    | Some(_) => config.columns
+    | None => ["_id", ...config.columns]
+    };
+  let nodesField = buildFieldQuery("nodes", nodesFields);
   let query =
     "query PaginatedTable($offset: Int, $limit: Int) { "
     ++ config.queryField
     ++ "(offset: $offset, limit: $limit) { totalCount "
     ++ nodesField
     ++ " } }";
-  let itemsPerPage = 10;
   let variables = Js.Dict.empty();
   Js.Dict.set(
     variables,

@@ -19,7 +19,7 @@ let make = _children => {
                          {
                            switch (route) {
                            | Router.AddView => <AddView />
-                           | Router.View(name) => <View name />
+                           | Router.View(name, path) => <View name path />
                            }
                          }
                        </Layout.Content>

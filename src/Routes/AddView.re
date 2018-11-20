@@ -13,11 +13,13 @@ let make = _children => {
                <Card title="Create a new view">
                  <TableConfigSetup
                    setConfig={
-                     tableConfig =>
+                     tableConfig => {
                        setConfig({
                          ...config,
                          tables: List.concat(config.tables, [tableConfig]),
-                       })
+                       });
+                       ReasonReact.Router.push("/view/" ++ tableConfig.name);
+                     }
                    }
                  />
                </Card>

@@ -10,9 +10,13 @@ type action =
 
 let component = ReasonReact.reducerComponent("TableConfigSetup");
 
-let make = (~setConfig, _children) => {
+let make = (~setConfig, ~initialConfig=?, ~deleteView=?, _children) => {
   ...component,
-  initialState: () => TableConfig.{name: "", queryField: "", columns: []},
+  initialState: () =>
+    switch (initialConfig) {
+    | Some(config) => config
+    | None => TableConfig.{name: "", queryField: "", columns: []}
+    },
   reducer: (action, state) =>
     switch (action) {
     | SetName(name) => ReasonReact.Update(TableConfig.{...state, name})
@@ -106,6 +110,15 @@ let make = (~setConfig, _children) => {
                  };
                }
                <Form.SubmitButton> {str("Save")} </Form.SubmitButton>
+               {
+                 switch (deleteView) {
+                 | None => ReasonReact.null
+                 | Some(delete) =>
+                   <Form.DangerButton onClick=delete>
+                     {str("Delete view")}
+                   </Form.DangerButton>
+                 }
+               }
              </Form>
          }
     </Schema.Context.Consumer>,

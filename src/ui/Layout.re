@@ -40,7 +40,7 @@ module SidebarItem = {
     ...component,
     render: _self =>
       <li className="nav-item">
-        <a className="nav-link" href=url> ...children </a>
+        <Link className="nav-link" url> ...children </Link>
       </li>,
   };
 };
@@ -93,13 +93,45 @@ module Row = {
 module Card = {
   let component = ReasonReact.statelessComponent("Layout.Card");
 
-  let make = (~title: string, children) => {
+  let make =
+      (
+        ~title: string,
+        ~configUrl: option(string)=?,
+        ~closeUrl: option(string)=?,
+        children,
+      ) => {
     ...component,
     render: _self =>
       <div className="card">
         <div className="card-header">
-          <i className="fa fa-align-justify" />
+          <i className="fa fa-list" />
           {ReasonReact.string(title)}
+          {
+            switch (configUrl, closeUrl) {
+            | (None, None) => ReasonReact.null
+            | _ =>
+              <div className="card-header-actions">
+                {
+                  switch (configUrl) {
+                  | None => ReasonReact.null
+                  | Some(url) =>
+                    <Link className="card-header-action btn-setting" url>
+                      <i className="icon-settings" />
+                    </Link>
+                  }
+                }
+                {
+                  switch (closeUrl) {
+                  | None => ReasonReact.null
+                  | Some(url) =>
+                    <Link className="card-header-action btn-close" url>
+                      <i className="icon-close" />
+                    </Link>
+                  }
+                }
+              </div>
+            }
+          }
         </div>
         <div> <div className="card-body"> ...children </div> </div>
       </div>,

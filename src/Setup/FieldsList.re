@@ -45,10 +45,16 @@ let rec make =
                       {str(field.name)}
                     </a>
                     {
-                      switch (expanded->List.getBy(field => field == name)) {
-                      | None => ReasonReact.null
+                      switch (
+                        expanded->List.getBy(field => field == name),
+                        /* expand if a nested field is selected */
+                        selection->List.getBy(selected =>
+                          selected |> Js.String.startsWith(fullPath)
+                        ),
+                      ) {
+                      | (None, None) => ReasonReact.null
                       /* for recusion, we can't use JSX so we call `make` manually */
-                      | Some(_) =>
+                      | _ =>
                         ReasonReact.element(
                           make(
                             ~fields,

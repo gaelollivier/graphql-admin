@@ -90,3 +90,24 @@ module SubmitButton = {
       </button>,
   };
 };
+
+module DangerButton = {
+  let component = ReasonReact.statelessComponent("DangerButton");
+
+  let make = (~onClick, children) => {
+    ...component,
+    render: _self =>
+      <button
+        className="btn btn-sm btn-danger"
+        style={ReactDOMRe.Style.make(~marginLeft="10px", ())}
+        type_="button"
+        onClick={
+          event => {
+            ReactEvent.Mouse.preventDefault(event);
+            onClick();
+          }
+        }>
+        ...children
+      </button>,
+  };
+};

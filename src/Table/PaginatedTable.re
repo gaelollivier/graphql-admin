@@ -19,10 +19,10 @@ let make = (~config: TableConfig.t, _children) => {
     },
   render: self => {
     let {currentPage} = self.state;
-    let itemsPerPage = 10;
+    let itemsPerPage = 20;
     let (query, variables) =
-      TableQuery.buildPaginatedQuery(config, currentPage);
-    Js.log(query);
+      TableQuery.buildPaginatedQuery(~config, ~currentPage, ~itemsPerPage);
+    /* Js.log(query); */
     /* use query as component key to force re-mount (and reset state)
        when query changes */
     <FetchQuery key={query ++ Json.stringify(variables)} query variables>
