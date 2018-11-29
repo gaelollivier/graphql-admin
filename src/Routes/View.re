@@ -29,48 +29,43 @@ let make = (~name, ~path, _children) => {
                switch (tableConfig) {
                | None => ReasonReact.string("View not found")
                | Some(tableConfig) =>
-                 <>
-                   {
-                     switch (path) {
-                     | ["config"] =>
-                       <Card
-                         title="View configuration"
-                         closeUrl={"/view/" ++ tableConfig.name}>
-                         <TableConfigSetup
-                           initialConfig=tableConfig
-                           setConfig=(
-                             newConfig => {
-                               setConfig(
-                                 updateViewConfig(
-                                   config,
-                                   tableConfig.name,
-                                   newConfig,
-                                 ),
-                               );
-                               ReasonReact.Router.push(
-                                 "/view/" ++ newConfig.name,
-                               );
-                             }
-                           )
-                           deleteView=(
-                             () => {
-                               setConfig(
-                                 deleteViewConfig(config, tableConfig),
-                               );
-                               ReasonReact.Router.push("/");
-                             }
-                           )
-                         />
-                       </Card>
-                     | _ => ReasonReact.null
-                     }
-                   }
+                 switch (path) {
+                 | ["config"] =>
+                   <Card
+                     title="View configuration"
+                     closeUrl={"/view/" ++ tableConfig.name}>
+                     <TableConfigSetup
+                       initialConfig=tableConfig
+                       setConfig=(
+                         newConfig => {
+                           setConfig(
+                             updateViewConfig(
+                               config,
+                               tableConfig.name,
+                               newConfig,
+                             ),
+                           );
+                           ReasonReact.Router.push(
+                             "/view/" ++ newConfig.name,
+                           );
+                         }
+                       )
+                       deleteView=(
+                         () => {
+                           setConfig(deleteViewConfig(config, tableConfig));
+                           ReasonReact.Router.push("/");
+                         }
+                       )
+                     />
+                   </Card>
+                 | _ =>
                    <Card
                      title={tableConfig.name}
                      configUrl={"/view/" ++ tableConfig.name ++ "/config"}>
+                     <TableInputForm config=tableConfig />
                      <FieldTable config=tableConfig />
                    </Card>
-                 </>
+                 }
                };
              }
            }

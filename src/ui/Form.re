@@ -34,17 +34,38 @@ module Label = {
   };
 };
 
+module InputGroup = {
+  let component = ReasonReact.statelessComponent("Form.InputGroup");
+
+  let make = children => {
+    ...component,
+    render: _self => <div className="input-group"> ...children </div>,
+  };
+};
+
+module InputGroupText = {
+  let component = ReasonReact.statelessComponent("Form.InputGroupText");
+
+  let make = children => {
+    ...component,
+    render: _self =>
+      <div className="input-group-prepend">
+        <span className="input-group-text"> ...children </span>
+      </div>,
+  };
+};
+
 module TextInput = {
   let component = ReasonReact.statelessComponent("Form.TextInput");
 
-  let make = (~id, ~placeholder, ~value, ~onChange, _children) => {
+  let make = (~id, ~placeholder=?, ~value, ~onChange, _children) => {
     ...component,
     render: _self =>
       <input
         className="form-control"
         id
         type_="text"
-        placeholder
+        ?placeholder
         value
         onChange={event => onChange(event->ReactEvent.Form.target##value)}
       />,

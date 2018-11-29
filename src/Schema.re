@@ -7,14 +7,15 @@ type type_ =
   | Interface(string)
   | Union(string)
   | Enum(string)
-  | InputObject(string, list(inputField))
+  | InputObject(string, list(arg))
 /* object field */
 and field = {
   name: string,
+  args: list(arg),
   typeRef,
 }
-/* input object field */
-and inputField = {
+/* argument (for fields or input objects) */
+and arg = {
   name: string,
   typeRef,
 }
@@ -160,7 +161,7 @@ let rec decodeType = (getTypeExn, json) => {
   | "INPUT_OBJECT" =>
     InputObject(
       json |> field("name", string),
-      json |> field("inputFields", list(decodeInputField(getTypeExn))),
+      json |> field("inputFields", list(decodeArg(getTypeExn))),
     )
   | unknown =>
     raise(Json.Decode.DecodeError("Uknown type kind '" ++ unknown ++ "'"))
@@ -169,9 +170,10 @@ let rec decodeType = (getTypeExn, json) => {
 and decodeField = (getTypeExn, json) =>
   Json.Decode.{
     name: json |> field("name", string),
+    args: json |> field("args", list(decodeArg(getTypeExn))),
     typeRef: json |> field("type", decodeTypeRef(getTypeExn)),
   }
-and decodeInputField = (getTypeExn, json): inputField =>
+and decodeArg = (getTypeExn, json): arg =>
   Json.Decode.{
     name: json |> field("name", string),
     typeRef: json |> field("type", decodeTypeRef(getTypeExn)),
